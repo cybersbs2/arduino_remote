@@ -18,6 +18,8 @@ double NINE = 552638567; //OUT3 : cpu board relay
 double ON = 16736925;
 double UP = 552616127;
 double DOWN = 552648767;
+double UP_2 = 552600317;
+double DOWN_2 = 552632957;
 double PRESS = 4294967295; //if you press any button for a long time, it will receive the data as it.
 
 //pin setting
@@ -299,6 +301,17 @@ void loop() {
       if(analogRead(VOL)>45) fflag = 1;
       else fflag = 0;
     }
+
+    if (before_state == UP_2) {
+      if(analogRead(VOL)<1005) flag = 1;
+      else flag = 0;
+    }
+    
+    if (before_state == DOWN_2) {
+      if(analogRead(VOL)>45) fflag = 1;
+      else fflag = 0;
+    }
+    
     irrecv.resume(); // Receive the next value
   }
 
