@@ -1,0 +1,349 @@
+#include <LiquidCrystal_I2C.h>
+#include <EEPROM.h>
+#include <Wire.h>
+//#include <boarddefs.h>
+#include <IRremote.h>
+//#include <IRremoteInt.h>
+//#include <ir_Lego_PF_BitStreamEncoder.h>
+
+//remote control button name
+//button name setting
+
+double ONE = 16724175;
+double TWO = 16718055;
+double THREE = 16743045;
+double FOUR = 16716015;
+double FIVE = 16726215;
+double SEVEN = 16728765;
+double EIGHT = 16730805;
+double NINE = 16732845;
+
+double ON = 16736925;
+double UP = 16754775;
+double DOWN = 16769055;
+double PRESS = 4294967295; //if you press any button for a long time, it will receive the data as it.
+
+//pin setting
+int VOL_UP = 0;
+int VOL_DOWN = 1;
+int OUT3 = 3;
+int OUT2 = 5;
+int RECV_PIN = 6; 
+int OUT1 = 7;
+int IN5 = 8;
+int IN4 = 9;
+int IN3 = 10;
+int IN2 = 11;
+int IN1 = 12;
+int VOL = 14;
+int ENCODER1 = 15;
+int ENCODER2 = 16;
+
+//variable setting
+float temp;
+int encoder_flag = 0;
+bool before_encoder = false;
+double before_state;
+int addr_mode = 0;
+int val_mode;
+int val_volume;
+boolean power_state = 1;
+int flag = 0;
+int fflag = 0;
+int mode_f = 0;
+int channel_f[2] = {0,};
+int i = 0;
+int k[6] = {0,};
+unsigned long time_10s;
+
+bool seven_state = false;
+bool eight_state = false;
+bool nine_state = false;
+
+byte SpecialChar1[8] = {
+  B00000,
+  B00000,
+  B00000,
+  B00100,
+  B00100,
+  B00000,
+  B00000,
+  B00000
+};
+
+byte SpecialChar2[8] = {
+  B11111,
+  B11111,
+  B11111,
+  B11111,
+  B11111,
+  B11111,
+  B11111,
+  B11111
+};
+
+byte SpecialChar3[8] = {
+  B01000,
+  B01100,
+  B01110,
+  B01111,
+  B01111,
+  B01110,
+  B01100,
+  B01000
+};
+
+byte SpecialChar4[8] = {
+  B00010,
+  B00110,
+  B01110,
+  B11110,
+  B11110,
+  B01110,
+  B00110,
+  B00010
+};
+
+byte SpecialChar5[8] = {
+  B00100,
+  B01110,
+  B01110,
+  B11111,
+  B00000,
+  B00000,
+  B00000,
+  B00000
+};
+IRrecv irrecv(RECV_PIN);
+decode_results results;
+LiquidCrystal_I2C lcd(0x27,20,4);
+
+void setup()
+{
+    //Serial.begin(9600);
+    lcd.begin();
+    lcd.clear();
+    
+    lcd.createChar(0, SpecialChar1);
+    lcd.createChar(1, SpecialChar2);
+    lcd.createChar(2, SpecialChar3);
+    lcd.createChar(3, SpecialChar4);
+    lcd.createChar(4, SpecialChar5);
+
+    pinMode(VOL_UP, OUTPUT);
+    pinMode(VOL_DOWN, OUTPUT);
+    pinMode(OUT3, OUTPUT);
+    pinMode(OUT2, OUTPUT);
+    pinMode(OUT1, OUTPUT);
+    pinMode(IN1, OUTPUT);
+    pinMode(IN2, OUTPUT);
+    pinMode(IN3, OUTPUT);
+    pinMode(IN4, OUTPUT);
+    pinMode(IN5, OUTPUT);
+    pinMode(ENCODER1, INPUT);
+    pinMode(ENCODER2, INPUT);
+    
+    irrecv.enableIRIn(); // Start the receiver
+
+    digitalWrite(OUT1, LOW);
+    digitalWrite(OUT2, LOW);
+    digitalWrite(OUT3, LOW);
+    digitalWrite(IN1, LOW);
+    digitalWrite(IN2, LOW);
+    digitalWrite(IN3, LOW);
+    digitalWrite(IN4, LOW);
+    digitalWrite(IN5, LOW);
+    digitalWrite(VOL_UP, HIGH);
+    digitalWrite(VOL_DOWN, HIGH);
+    
+    val_mode = EEPROM.read(addr_mode);
+    val_volume = analogRead(VOL)/50;
+    val_mode_change();
+    
+    lcd.setCursor(2,2);
+    lcd.print("7      8      9");
+    lcd.backlight();
+    lcd.display();
+}
+
+void loop() {
+  //if there is new input  
+  if (irrecv.decode(&results)) {
+    //Serial.println(results.value);
+    if(results.value != PRESS) {
+      before_state = (double)results.value;
+    }
+    
+    if(power_state == 1) { 
+      if (before_state == ONE && results.value != PRESS) {
+        val_mode = 1;
+        val_mode_change();
+        digitalWrite(IN1, LOW);
+        digitalWrite(IN2, HIGH);
+        digitalWrite(IN3, HIGH);
+        digitalWrite(IN4, HIGH);
+        digitalWrite(IN5, HIGH);
+        mode_f = 1;
+        time_10s = millis();
+      } else if (before_state == TWO && results.value != PRESS) {
+        val_mode = 2;
+        val_mode_change();
+        digitalWrite(IN1, HIGH);
+        digitalWrite(IN2, LOW);
+        digitalWrite(IN3, HIGH);
+        digitalWrite(IN4, HIGH);
+        digitalWrite(IN5, HIGH);
+        mode_f = 1;
+        time_10s = millis();
+      } else if (before_state == THREE && results.value != PRESS) {
+        val_mode = 3;
+        val_mode_change();
+        digitalWrite(IN1, HIGH);
+        digitalWrite(IN2, HIGH);
+        digitalWrite(IN3, LOW);
+        digitalWrite(IN4, HIGH);
+        digitalWrite(IN5, HIGH);
+        mode_f = 1;
+        time_10s = millis();
+      } else if (before_state == FOUR && results.value != PRESS) {
+        val_mode = 4;
+        val_mode_change();
+        digitalWrite(IN1, HIGH);
+        digitalWrite(IN2, HIGH);
+        digitalWrite(IN3, HIGH);
+        digitalWrite(IN4, LOW);
+        digitalWrite(IN5, HIGH);
+        mode_f = 1;
+        time_10s = millis();
+      } else if (before_state == FIVE && results.value != PRESS) {
+        val_mode = 5;
+        val_mode_change();
+        digitalWrite(IN1, HIGH);
+        digitalWrite(IN2, HIGH);
+        digitalWrite(IN3, HIGH);
+        digitalWrite(IN4, HIGH);
+        digitalWrite(IN5, LOW);
+        mode_f = 1;
+        time_10s = millis();
+      } 
+
+      if (before_state == SEVEN && results.value != PRESS) {
+        seven_state = !seven_state;
+        digitalWrite(OUT1, seven_state);
+        if (seven_state == LOW) {
+          lcd.setCursor(0,3);
+          lcd.print("OUT ON ");
+        } else {
+          lcd.setCursor(0,3);
+          lcd.print("       ");
+        }
+      } else if (before_state == EIGHT && results.value != PRESS) {
+        eight_state = !eight_state;
+        digitalWrite(OUT2, eight_state);
+        if (eight_state == LOW) {
+          lcd.setCursor(7,3);
+          lcd.print("OUT ON ");
+        } else {
+          lcd.setCursor(7,3);
+          lcd.print("       ");
+        }
+      } else if (before_state == NINE && results.value != PRESS) {
+        nine_state = !nine_state;
+        digitalWrite(OUT3, nine_state);
+        if (nine_state == LOW) {
+          lcd.setCursor(14,3);
+          lcd.print("OUT ON ");
+        } else {
+          lcd.setCursor(14,3);
+          lcd.print("       ");
+        }
+      }
+      
+      if (before_state == UP) {
+        if(analogRead(VOL)<1005) flag = 1;
+        else flag = 0;
+      }
+      
+      if (before_state == DOWN) {
+        if(analogRead(VOL)>45) fflag = 1;
+        else fflag = 0;
+      }
+    }
+    irrecv.resume(); // Receive the next value
+  }
+
+  //if there is no new input
+  if(flag == 1) {
+    digitalWrite(VOL_UP,LOW);
+    delay(100);
+  } else {
+    digitalWrite(VOL_UP,HIGH);
+    val_volume = analogRead(VOL)/50;
+    val_volume_change();
+  }
+  flag = 0;
+
+  if(fflag == 1) {
+    digitalWrite(VOL_DOWN,LOW);
+    delay(100);
+  } else {
+    digitalWrite(VOL_DOWN,HIGH);
+    val_volume = analogRead(VOL)/50;
+    val_volume_change();
+  }
+  fflag = 0;
+}
+
+void val_volume_change() {
+  lcd.setCursor(0,0);
+  if(val_volume < 10) {
+    lcd.print(" ");
+  }
+  lcd.print(val_volume);
+  for(i=6;i<16;i++) {
+    lcd.setCursor(i,0);
+    if(i-6<val_volume/2) {
+      lcd.write(byte(1));
+    } else {
+      lcd.write(byte(0));
+    }
+  }
+}
+
+void val_mode_change() {
+  for(i=1; i<7; i++) {
+    if(i==val_mode) {
+      k_flag(val_mode);
+      if(k[val_mode-1]==0) {
+        Lcd(val_mode);
+      } else if(k[val_mode-1]==1) {
+        lcd.setCursor(0,1);
+        lcd.print("     IN = AUX ");
+        lcd.print(val_mode);
+      }         
+    }
+  }
+}
+
+void Lcd(int b) {
+  for(int l=0; l<6; l++) {
+    for(int m=0; m<l; m++) {
+      lcd.setCursor(m,1);
+      lcd.print(" ");
+    }
+    lcd.setCursor(l,1);
+    lcd.print("IN = AUX ");
+    lcd.print(b);
+    lcd.print("     ");
+    k[b-1]=1;
+    delay(50);
+  }
+}
+
+void k_flag(int c) {
+  for(int i=1; i<7; i++) {
+    if(i!=c) {
+      k[i-1]=0;
+    }
+  }
+}
